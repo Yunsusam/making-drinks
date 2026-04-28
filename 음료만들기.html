@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세아의 일일 찻집 – 분수 덧셈·뺄셈</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Gaegu:wght@700&display=swap" rel="stylesheet">
+<style>
+/* ──────────── DESIGN TOKENS ──────────── */
+:root {
+  --cream: #FFF8ED;
+  --sage: #6BAA75;
+  --sage-l: #D4EDDA;
+  --lemon: #F6D860;
+  --coral: #F4845F;
+  --coral-l: #FDEBD0;
+  --sky: #5BB8E8;
+  --sky-l: #DAEEFB;
+  --plum: #9B59B6;
+  --text: #2C3E50;
+  --text-m: #5D6D7E;
+  --shadow: 0 6px 24px rgba(0,0,0,.12);
+  --r: 20px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ──────────── FRACTION RENDERING ──────────── */
+.F {
+  display: inline-flex; flex-direction: column; align-items: center;
+  vertical-align: middle; font-size: .78em; line-height: 1.2; margin: 0 2px;
+  font-weight: 700;
+}
+.Fn { border-bottom: 2px solid currentColor; padding: 0 5px 1px; min-width: 1.2em; text-align: center; }
+.Fd { padding: 1px 5px 0; min-width: 1.2em; text-align: center; }
+.MF { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
+
+/* ──────────── BASE ──────────── */
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ──────────── PROGRESS BAR ──────────── */
+.progress-bar {
+  position: fixed; top: 0; left: 0; width: 100%; height: 5px;
+  background: #e0e0e0; z-index: 200;
+}
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--sage), var(--lemon));
+  transition: width .5s ease;
+}
+
+/* ──────────── PAGE DOTS ──────────── */
+.page-dots {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; z-index: 200;
+}
+.page-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ccc; cursor: pointer; transition: all .3s;
+}
+.page-dot.active { background: var(--sage); transform: scale(1.3); }
+
+/* ──────────── PAGES ──────────── */
+.page { display: none; min-height: 100vh; padding: 30px 20px 80px; max-width: 760px; margin: 0 auto; }
+.page.active { display: block; animation: fadeUp .45s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(18px);} to { opacity:1; transform:translateY(0);} }
+
+/* ──────────── NAV BUTTONS ──────────── */
+.nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 36px; }
+.btn-prev, .btn-next, .btn-check, .btn-restart {
+  border: none; border-radius: 50px; cursor: pointer; font-family: inherit;
+  font-size: 1rem; font-weight: 700; padding: 14px 32px; transition: all .22s;
+}
+.btn-prev { background: #eee; color: var(--text-m); }
+.btn-prev:hover { background: #ddd; }
+.btn-next { background: var(--sage); color: #fff; box-shadow: 0 4px 14px rgba(107,170,117,.4); }
+.btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(107,170,117,.5); }
+.btn-check { background: var(--coral); color: #fff; box-shadow: 0 4px 14px rgba(244,132,95,.4); }
+.btn-check:hover { transform: translateY(-2px); }
+.btn-restart { background: var(--sky); color: #fff; box-shadow: 0 4px 14px rgba(91,184,232,.4); }
+
+/* ──────────── COVER PAGE ──────────── */
+.cover {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 90vh; text-align: center; gap: 24px;
+}
+.cover-sign {
+  background: linear-gradient(135deg, var(--sage), #4a9456);
+  color: #fff; border-radius: var(--r); padding: 30px 50px;
+  font-family: 'Gaegu', cursive; font-size: 2.2rem;
+  box-shadow: var(--shadow); position: relative;
+}
+.cover-sign::after {
+  content: ''; position: absolute; bottom: -14px; left: 50%;
+  transform: translateX(-50%); border: 14px solid transparent;
+  border-top-color: #4a9456;
+}
+.cover-drinks { font-size: 3.5rem; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.cover h1 { font-size: 1.5rem; color: var(--text-m); font-weight: 500; }
+.cover .btn-next { font-size: 1.2rem; padding: 16px 48px; }
+
+/* ──────────── SECTION HEADERS ──────────── */
+.chapter-tag {
+  display: inline-block; background: var(--lemon); color: #7a6000;
+  border-radius: 8px; padding: 4px 14px; font-size: .85rem; font-weight: 700;
+  margin-bottom: 10px; letter-spacing: .5px;
+}
+.chapter-title { font-family: 'Gaegu', cursive; font-size: 2rem; color: var(--sage); margin-bottom: 20px; }
+
+/* ──────────── STORY BUBBLE ──────────── */
+.story-bubble {
+  background: #fff; border-radius: var(--r); padding: 24px 28px;
+  box-shadow: var(--shadow); border-left: 5px solid var(--sage);
+  margin-bottom: 20px; font-size: 1.05rem; line-height: 1.9;
+}
+.story-bubble .hi { background: var(--sage-l); border-radius: 6px; padding: 2px 8px; font-weight: 700; }
+
+/* ──────────── CHARACTER SCENE ──────────── */
+.scene {
+  background: linear-gradient(135deg, var(--sage-l), var(--sky-l));
+  border-radius: var(--r); padding: 28px; text-align: center;
+  font-size: 4rem; margin-bottom: 20px; box-shadow: var(--shadow);
+}
+.scene .speech {
+  display: inline-block; background: #fff; border-radius: 12px;
+  padding: 12px 20px; font-size: 1rem; font-weight: 700;
+  box-shadow: 0 3px 12px rgba(0,0,0,.1); margin-top: 10px;
+}
+
+/* ──────────── MATERIAL CARDS ──────────── */
+.material-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 22px; }
+.mat-card {
+  background: #fff; border-radius: var(--r); padding: 22px 16px;
+  text-align: center; box-shadow: var(--shadow); transition: transform .2s;
+}
+.mat-card:hover { transform: translateY(-4px); }
+.mat-icon { font-size: 2.8rem; margin-bottom: 8px; }
+.mat-name { font-weight: 700; margin-bottom: 4px; }
+.mat-qty { font-size: 1.2rem; color: var(--sage); font-weight: 900; }
+
+/* ──────────── RECIPE CARDS ──────────── */
+.recipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+.recipe-card {
+  background: linear-gradient(135deg, #fff 70%, var(--cream));
+  border: 2.5px solid var(--sage-l); border-radius: var(--r);
+  padding: 20px; box-shadow: var(--shadow);
+}
+.recipe-card h4 { font-size: 1.1rem; color: var(--sage); margin-bottom: 10px; }
+.recipe-ing { display: flex; flex-direction: column; gap: 6px; font-size: .95rem; }
+.recipe-ing span { background: var(--cream); border-radius: 8px; padding: 5px 10px; }
+
+/* ──────────── ORDER PAPERS ──────────── */
+.orders-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 22px; }
+.order-paper {
+  background: #fff; border-radius: 12px; padding: 18px 14px;
+  box-shadow: var(--shadow); border-top: 6px solid var(--lemon); text-align: center;
+}
+.order-label { font-weight: 900; font-size: 1.1rem; margin-bottom: 10px; color: var(--coral); }
+.order-item { font-size: .9rem; padding: 4px 0; border-bottom: 1px dashed #eee; }
+.order-item:last-child { border-bottom: none; }
+
+/* ──────────── CALC SECTION ──────────── */
+.calc-card {
+  background: #fff; border-radius: var(--r); padding: 26px;
+  box-shadow: var(--shadow); margin-bottom: 20px;
+}
+.calc-card h3 { font-size: 1.1rem; color: var(--text-m); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+
+.order-row {
+  display: grid; grid-template-columns: 1.6fr 1fr 1.2fr 1.2fr;
+  gap: 10px; align-items: center; padding: 12px 10px;
+  border-radius: 12px; margin-bottom: 10px; border: 2px solid #eee;
+  transition: border-color .3s;
+}
+.order-row:hover { border-color: var(--sage-l); }
+.order-row.header { background: var(--sage); color: #fff; font-weight: 700; border: none; border-radius: 10px; }
+.order-row .label { font-size: .85rem; font-weight: 700; }
+.order-row .fixed { text-align: center; font-weight: 700; color: var(--sage); }
+
+/* ──────────── FRACTION INPUT ──────────── */
+.frac-input {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--cream); border-radius: 12px; padding: 8px 12px;
+}
+.frac-input-stack { display: flex; flex-direction: column; align-items: center; }
+.fi { width: 44px; text-align: center; border: 2px solid #ccc; border-radius: 8px;
+  padding: 5px 2px; font-size: 1rem; font-weight: 700; font-family: inherit;
+  outline: none; transition: border-color .2s; background: #fff; }
+.fi:focus { border-color: var(--sage); }
+.fi.correct { border-color: #27ae60 !important; background: #eafaf1; }
+.fi.wrong { border-color: #e74c3c !important; background: #fdedec; }
+.fi-bar { height: 2px; background: #888; width: 40px; margin: 2px auto; }
+.fi-whole { width: 50px; font-size: 1.1rem; }
+
+/* ──────────── ANSWER SECTION ──────────── */
+.answer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.ans-box {
+  background: var(--cream); border: 2.5px solid #ddd; border-radius: var(--r);
+  padding: 18px 14px; text-align: center; transition: border-color .3s;
+}
+.ans-box.correct { border-color: #27ae60; background: #eafaf1; }
+.ans-box.wrong { border-color: #e74c3c; background: #fdedec; }
+.ans-label { font-size: .85rem; color: var(--text-m); font-weight: 700; margin-bottom: 10px; }
+.ans-mark { font-size: 1.4rem; margin-top: 8px; min-height: 1.6rem; }
+
+/* ──────────── INFO BOX ──────────── */
+.info-box {
+  background: linear-gradient(135deg, var(--sky-l), #fff);
+  border-left: 5px solid var(--sky); border-radius: 12px;
+  padding: 18px 22px; margin-bottom: 20px; font-size: .95rem; line-height: 1.9;
+}
+.info-box b { color: var(--coral); }
+
+/* ──────────── HINT ──────────── */
+.hint-toggle { background: var(--lemon); border: none; border-radius: 10px;
+  padding: 10px 22px; font-weight: 700; cursor: pointer; font-family: inherit;
+  font-size: .95rem; transition: all .2s; }
+.hint-toggle:hover { transform: scale(1.03); }
+.hint-content {
+  display: none; background: #FFFDE7; border: 2px dashed var(--lemon);
+  border-radius: 12px; padding: 16px 20px; margin-top: 10px; font-size: .9rem; line-height: 1.8;
+}
+.hint-content.open { display: block; animation: fadeUp .3s; }
+
+/* ──────────── STEP INFO ──────────── */
+.step-list { display: flex; gap: 12px; flex-direction: column; margin-bottom: 18px; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: #fff; border-radius: 12px; padding: 14px 18px; box-shadow: var(--shadow);
+}
+.step-num {
+  background: var(--coral); color: #fff; border-radius: 50%;
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; flex-shrink: 0;
+}
+
+/* ──────────── ENDING ──────────── */
+.ending { text-align: center; padding: 40px 20px; }
+.ending .big-emoji { font-size: 5rem; animation: float 2s ease-in-out infinite; }
+.ending h2 { font-family: 'Gaegu', cursive; font-size: 2.5rem; color: var(--sage); margin: 16px 0; }
+.summary-table {
+  width: 100%; border-collapse: collapse; margin: 20px 0;
+  border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow);
+}
+.summary-table th { background: var(--sage); color: #fff; padding: 14px; }
+.summary-table td { background: #fff; padding: 14px; text-align: center; border-bottom: 1px solid #eee; font-weight: 700; }
+.summary-table tr:last-child td { border-bottom: none; }
+
+/* ──────────── POPUP ──────────── */
+.popup {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
+  z-index: 1000; border-radius: 20px; padding: 28px 44px; text-align: center;
+  font-size: 1.2rem; font-weight: 700; color: #fff;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+.popup.show { transform: translate(-50%,-50%) scale(1); }
+.popup.success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+.popup.info { background: linear-gradient(135deg, #f39c12, #f1c40f); color: #333; }
+.popup.error { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+/* ──────────── CONFETTI ──────────── */
+@keyframes confettiFall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+.cf { position: fixed; top: -30px; font-size: 1.5rem; animation: confettiFall 3s ease forwards; z-index: 500; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+<div class="page-dots" id="dots"></div>
+<div class="popup" id="popup"></div>
+
+<!-- ══ PAGE 0: COVER ══ -->
+<div class="page active" id="p0">
+  <div class="cover">
+    <div class="cover-sign">🏪 세아의 일일 찻집</div>
+    <div class="cover-drinks">🥤🍋🌿</div>
+    <h1>재료를 계산해서 남은 재료 구하기</h1>
+    <p style="color:var(--text-m); font-size:.95rem;">분수의 덧셈과 뺄셈 · 초등 4학년 수학</p>
+    <button class="btn-next" onclick="go(1)">이야기 시작하기 📖</button>
+  </div>
+</div>
+
+<!-- ══ PAGE 1: 이야기 ══ -->
+<div class="page" id="p1">
+  <div class="chapter-tag">🏫 이야기</div>
+  <h2 class="chapter-title">학교 축제 날!</h2>
+  <div class="scene">
+    👧 👦 👧 👦
+    <div class="speech">우리 같이 일일 찻집을 열자! 🎉</div>
+  </div>
+  <div class="story-bubble">
+    오늘은 학교 <span class="hi">축제</span> 날이에요!<br>
+    세아는 친구들과 함께 맛있는 음료를 만들어 팔기로 했어요.<br>
+    메뉴는 <strong>매실에이드</strong>🌿와 <strong>레몬에이드</strong>🍋 두 가지예요.
+  </div>
+  <div class="nav-row">
+    <button class="btn-prev" onclick="go(0)">◀ 이전</button>
+    <button class="btn-next" onclick="go(2)">다음 ▶</button>
+  </div>
+</div>
+
+<!-- ══ PAGE 2: 재료 ══ -->
+<div class="page" id="p2">
+  <div class="chapter-tag">📦 준비물</div>
+  <h2 class="chapter-title">세아가 준비한 재료</h2>
+  <div class="material-grid">
+    <div class="mat-card">
+      <div class="mat-icon">💧</div>
+      <div class="mat-name">탄산수</div>
+      <div class="mat-qty">10병</div>
+    </div>
+    <div class="mat-card">
+      <div class="mat-icon">🌿</div>
+      <div class="mat-name">매실청</div>
+      <div class="mat-qty">9큰술</div>
+    </div>
+    <div class="mat-card">
+      <div class="mat-icon">🍋</div>
+      <div class="mat-name">레몬청</div>
+      <div class="mat-qty">15큰술</div>
+    </div>
+  </div>
+  <h3 style="margin-bottom:14px; color:var(--sage);">🍹 음료 레시피</h3>
+  <div class="recipe-grid">
+    <div class="recipe-card">
+      <h4>🌿 매실에이드 1잔</h4>
+      <div class="recipe-ing">
+        <span>💧 탄산수 <strong>1병</strong></span>
+        <span>🌿 매실청 <span class="MF">2<span class="F"><span class="Fn">3</span><span class="Fd">4</span></span></span>큰술</span>
+      </div>
+    </div>
+    <div class="recipe-card">
+      <h4>🍋 레몬에이드 1잔</h4>
+      <div class="recipe-ing">
+        <span>💧 탄산수 <strong>1병</strong></span>
+        <span>🍋 레몬청 <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span>큰술</span>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="btn-prev" onclick="go(1)">◀ 이전</button>
+    <button class="btn-next" onclick="go(3)">다음 ▶</button>
+  </div>
+</div>
+
+<!-- ══ PAGE 3: 주문서 ══ -->
+<div class="page" id="p3">
+  <div class="chapter-tag">📋 주문</div>
+  <h2 class="chapter-title">주문이 들어왔어요!</h2>
+  <div class="orders-grid">
+    <div class="order-paper">
+      <div class="order-label">주문서 ①</div>
+      <div class="order-item"><span style="font-size:1.3rem">🌿</span> 매실에이드 1잔</div>
+      <div class="order-item"><span style="font-size:1.3rem">🍋🍋</span> 레몬에이드 2잔</div>
+    </div>
+    <div class="order-paper">
+      <div class="order-label">주문서 ②</div>
+      <div class="order-item"><span style="font-size:1.3rem">🌿🌿</span> 매실에이드 2잔</div>
+    </div>
+    <div class="order-paper">
+      <div class="order-label">주문서 ③</div>
+      <div class="order-item"><span style="font-size:1.3rem">🍋🍋</span> 레몬에이드 2잔</div>
+    </div>
+  </div>
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div>주문서별로 사용하는 <strong>재료의 양을 더해요</strong> (덧셈)</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div>처음 재료에서 사용한 양을 <strong>빼요</strong> (뺄셈) → 남은 재료 계산!</div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="btn-prev" onclick="go(2)">◀ 이전</button>
+    <button class="btn-next" onclick="go(4)">계산하러 가기 ▶</button>
+  </div>
+</div>
+
+<!-- ══ PAGE 4: 계산 – 주문서별 재료 ══ -->
+<div class="page" id="p4">
+  <div class="chapter-tag">✏️ 풀기</div>
+  <h2 class="chapter-title">각 주문서에 필요한 재료</h2>
+  <div class="info-box" style="text-align:justify;">
+    💡 빈 칸을 채워보세요! (<b>주문서 ①의 레몬청</b>과 <b>주문서 ③의 레몬청</b>, <b>주문서 ②의 매실청</b>이 필요한 양을 직접 계산해요.)
+  </div>
+
+  <button class="hint-toggle" onclick="toggleTableHint()" id="tableHintBtn" style="margin-bottom:14px">🖼️ 그림 힌트 보기</button>
+  <div id="tableHintBox" style="display:none;background:var(--sage-l);border-radius:14px;padding:13px 18px;margin-bottom:16px;font-size:.9rem;line-height:1.8;">
+    🖼️ <strong>그림으로 알아봐요!</strong> 각 음료에 필요한 재료 그림을 참고해서 빈 칸을 채워보세요.
+  </div>
+
+  <div class="calc-card">
+    <h3>📊 주문서별 재료 계산표</h3>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed;">
+      <!-- 헤더 -->
+      <thead>
+        <tr>
+          <th style="background:var(--sage);color:#fff;padding:10px 8px;text-align:center;font-size:.85rem;border-radius:10px 0 0 0;width:30%">주문서</th>
+          <th style="background:var(--sage);color:#fff;padding:10px 8px;text-align:center;font-size:.85rem;width:15%">💧 탄산수</th>
+          <th style="background:var(--sage);color:#fff;padding:10px 8px;text-align:center;font-size:.85rem;width:27%">🌿 매실청</th>
+          <th style="background:var(--sage);color:#fff;padding:10px 8px;text-align:center;font-size:.85rem;border-radius:0 10px 0 0;width:28%">🍋 레몬청</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 주문서 ① -->
+        <tr style="background:#fff;border-bottom:2px solid var(--cream);">
+          <td style="padding:12px 10px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:900;color:var(--coral);font-size:1rem;margin-bottom:6px">주문서 ①</div>
+            <div style="font-size:1.5rem;line-height:1.6">🌿</div>
+            <div style="font-size:.78rem;color:var(--text-m)">매실에이드 1잔</div>
+            <div style="font-size:1.5rem;line-height:1.6;margin-top:4px">🍋🍋</div>
+            <div style="font-size:.78rem;color:var(--text-m)">레몬에이드 2잔</div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:700;font-size:1rem;color:var(--sky)">3병</div>
+            <div class="tbl-vis" style="display:none;justify-content:center;gap:3px;margin-top:5px">
+              <div style="width:8px;height:20px;background:var(--sky);border-radius:2px"></div>
+              <div style="width:8px;height:20px;background:var(--sky);border-radius:2px"></div>
+              <div style="width:8px;height:20px;background:var(--sky);border-radius:2px"></div>
+            </div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:700;margin-bottom:5px"><span class="MF">2<span class="F"><span class="Fn">3</span><span class="Fd">4</span></span></span>큰술</div>
+            <!-- 시각: 2¾ = 큰술 2개(full) + 3/4칸 -->
+            <div class="tbl-vis" style="display:none;align-items:flex-end;justify-content:center;gap:3px">
+              <div style="width:18px;height:26px;background:var(--sage);border-radius:3px;border:1px solid rgba(0,0,0,.1)"></div>
+              <div style="width:18px;height:26px;background:var(--sage);border-radius:3px;border:1px solid rgba(0,0,0,.1)"></div>
+              <div style="width:18px;height:26px;background:#e0e0e0;border-radius:3px;border:1px solid rgba(0,0,0,.1);position:relative;overflow:hidden">
+                <div style="position:absolute;bottom:0;width:100%;height:75%;background:var(--sage)"></div>
+              </div>
+            </div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-size:.78rem;color:var(--text-m);margin-bottom:6px">
+              <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span> +
+              <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span> = ?
+            </div>
+            <!-- 시각: 3⅓ + 3⅓ (레몬에이드 2잔) -->
+            <div class="tbl-vis" style="display:none;align-items:flex-end;justify-content:center;gap:2px;margin-bottom:7px">
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#e0e0e0;border-radius:2px;overflow:hidden;position:relative"><div style="position:absolute;bottom:0;width:100%;height:33%;background:#F6D860"></div></div>
+              <span style="font-weight:900;font-size:11px;color:#d4a017;padding:0 1px">+</span>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#e0e0e0;border-radius:2px;overflow:hidden;position:relative"><div style="position:absolute;bottom:0;width:100%;height:33%;background:#F6D860"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+              <input class="fi fi-whole" id="r1w" type="number" min="0" max="20" placeholder="?" style="width:40px;font-size:.9rem">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <input class="fi" id="r1n" type="number" min="0" max="9" placeholder="?" style="width:34px">
+                <div class="fi-bar" style="width:32px"></div>
+                <input class="fi" id="r1d" type="number" min="1" max="9" placeholder="?" style="width:34px">
+              </div>
+              <span style="font-size:.8rem;color:var(--text-m)">큰술</span>
+              <span id="m1" style="font-size:1.2rem"></span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- 주문서 ② -->
+        <tr style="background:#fafafa;border-bottom:2px solid var(--cream);">
+          <td style="padding:12px 10px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:900;color:var(--coral);font-size:1rem;margin-bottom:6px">주문서 ②</div>
+            <div style="font-size:1.5rem;line-height:1.6">🌿🌿</div>
+            <div style="font-size:.78rem;color:var(--text-m)">매실에이드 2잔</div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:700;font-size:1rem;color:var(--sky)">2병</div>
+            <div class="tbl-vis" style="display:none;justify-content:center;gap:3px;margin-top:5px">
+              <div style="width:8px;height:20px;background:var(--sky);border-radius:2px"></div>
+              <div style="width:8px;height:20px;background:var(--sky);border-radius:2px"></div>
+            </div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-size:.78rem;color:var(--text-m);margin-bottom:6px">
+              <span class="MF">2<span class="F"><span class="Fn">3</span><span class="Fd">4</span></span></span> +
+              <span class="MF">2<span class="F"><span class="Fn">3</span><span class="Fd">4</span></span></span> = ?
+            </div>
+            <!-- 시각: 2¾ + 2¾ -->
+            <div class="tbl-vis" style="display:none;align-items:flex-end;justify-content:center;gap:2px;margin-bottom:7px">
+              <div style="width:11px;height:22px;background:var(--sage);border-radius:2px"></div>
+              <div style="width:11px;height:22px;background:var(--sage);border-radius:2px"></div>
+              <div style="width:11px;height:22px;background:#e0e0e0;border-radius:2px;overflow:hidden;position:relative"><div style="position:absolute;bottom:0;width:100%;height:75%;background:var(--sage)"></div></div>
+              <span style="font-weight:900;font-size:11px;color:var(--sage);padding:0 1px">+</span>
+              <div style="width:11px;height:22px;background:var(--sage);border-radius:2px"></div>
+              <div style="width:11px;height:22px;background:var(--sage);border-radius:2px"></div>
+              <div style="width:11px;height:22px;background:#e0e0e0;border-radius:2px;overflow:hidden;position:relative"><div style="position:absolute;bottom:0;width:100%;height:75%;background:var(--sage)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+              <input class="fi fi-whole" id="r2w" type="number" min="0" max="20" placeholder="?" style="width:40px;font-size:.9rem">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <input class="fi" id="r2n" type="number" min="0" max="9" placeholder="?" style="width:34px">
+                <div class="fi-bar" style="width:32px"></div>
+                <input class="fi" id="r2d" type="number" min="1" max="9" placeholder="?" style="width:34px">
+              </div>
+              <span style="font-size:.8rem;color:var(--text-m)">큰술</span>
+              <span id="m2" style="font-size:1.2rem"></span>
+            </div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-size:1.4rem;color:#bbb;font-weight:700">✕</div>
+            <div style="font-size:.72rem;color:var(--text-m);margin-top:2px">(매실에이드에는 필요 없어요)</div>
+          </td>
+        </tr>
+
+        <!-- 주문서 ③ -->
+        <tr style="background:#fff;">
+          <td style="padding:12px 10px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:900;color:var(--coral);font-size:1rem;margin-bottom:6px">주문서 ③</div>
+            <div style="font-size:1.5rem;line-height:1.6">🍋🍋</div>
+            <div style="font-size:.78rem;color:var(--text-m)">레몬에이드 2잔</div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:700;font-size:1rem;color:var(--sky)">2병</div>
+            <div class="tbl-vis" style="display:none;justify-content:center;gap:3px;margin-top:5px">
+              <div style="width:8px;height:20px;background:var(--sky);border-radius:2px"></div>
+              <div style="width:8px;height:20px;background:var(--sky);border-radius:2px"></div>
+            </div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-size:1.4rem;color:#bbb;font-weight:700">✕</div>
+            <div style="font-size:.72rem;color:var(--text-m);margin-top:2px">(레몬에이드에는 필요 없어요)</div>
+          </td>
+          <td style="padding:12px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-size:.78rem;color:var(--text-m);margin-bottom:6px">
+              <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span> +
+              <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span> = ?
+            </div>
+            <!-- 시각: 3⅓ + 3⅓ (레몬에이드 2잔) -->
+            <div class="tbl-vis" style="display:none;align-items:flex-end;justify-content:center;gap:2px;margin-bottom:7px">
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#e0e0e0;border-radius:2px;overflow:hidden;position:relative"><div style="position:absolute;bottom:0;width:100%;height:33%;background:#F6D860"></div></div>
+              <span style="font-weight:900;font-size:11px;color:#d4a017;padding:0 1px">+</span>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:10px;height:22px;background:#e0e0e0;border-radius:2px;overflow:hidden;position:relative"><div style="position:absolute;bottom:0;width:100%;height:33%;background:#F6D860"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+              <input class="fi fi-whole" id="r3w" type="number" min="0" max="20" placeholder="?" style="width:40px;font-size:.9rem">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <input class="fi" id="r3n" type="number" min="0" max="9" placeholder="?" style="width:34px">
+                <div class="fi-bar" style="width:32px"></div>
+                <input class="fi" id="r3d" type="number" min="1" max="9" placeholder="?" style="width:34px">
+              </div>
+              <span style="font-size:.8rem;color:var(--text-m)">큰술</span>
+              <span id="m3" style="font-size:1.2rem"></span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <button class="hint-toggle" onclick="toggleHint('h4')">💡 힌트 보기</button>
+  <div class="hint-content" id="h4">
+    🌿 매실에이드 1잔 = 매실청 <span class="MF">2<span class="F"><span class="Fn">3</span><span class="Fd">4</span></span></span>큰술 → 2잔이면 두 배!<br>
+    🍋 레몬에이드 1잔 = 레몬청 <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span>큰술 → 2잔이면 두 배!<br>
+    분모가 같으면 분자끼리 더해요 😊
+  </div>
+
+  <div class="nav-row" style="margin-top:20px">
+    <button class="btn-prev" onclick="go(3)">◀ 이전</button>
+    <button class="btn-check" onclick="checkP4()">확인하기 ✅</button>
+  </div>
+</div>
+
+<!-- ══ PAGE 5: 남은 재료 ══ -->
+<div class="page" id="p5">
+  <div class="chapter-tag">🎯 최종 계산</div>
+  <h2 class="chapter-title">남은 재료를 구해요!</h2>
+
+  <div class="info-box">
+    <strong>📝 먼저 앞에서 구한 양을 모두 더해요!</strong><br><br>
+    💧 탄산수: 3병 + 2병 + 2병 = <span style="color:var(--coral);font-weight:900">?병</span><br>
+    🌿 매실청: <span class="MF">2<span class="F"><span class="Fn">3</span><span class="Fd">4</span></span></span>큰술 + <span class="MF">5<span class="F"><span class="Fn">1</span><span class="Fd">2</span></span></span>큰술 = <span style="color:var(--coral);font-weight:900">?큰술</span><br>
+    🍋 레몬청: <span class="MF">6<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span>큰술 + <span class="MF">6<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span>큰술 = <span style="color:var(--coral);font-weight:900">?큰술</span><br><br>
+    <span style="font-size:.85rem;color:var(--text-m)">📌 힌트: 주문서①,②,③에서 구한 값들을 더해서 합계를 먼저 계산해보세요!</span>
+  </div>
+
+  <div class="calc-card" style="margin-bottom:14px">
+    <h3 style="font-size:.95rem">🧮 사용한 재료 합계 직접 계산</h3>
+    <button class="hint-toggle" onclick="toggleSumHint()" id="sumHintBtn" style="margin:10px 0 8px">🖼️ 그림 힌트 보기</button>
+    <div id="sumHintBox" style="display:none;margin-bottom:10px">
+      <div style="background:var(--sage-l);border-radius:10px;padding:10px 12px;font-size:.82rem;color:var(--text-m);margin-bottom:8px">🖼️ 그림으로 알아봐요! 아래 막대 그림으로 각 합계를 확인해보세요.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="background:var(--sky-l);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:.75rem;color:var(--text-m);margin-bottom:5px">💧 3+2+2병</div>
+          <div style="display:flex;justify-content:center;gap:2px;align-items:flex-end">
+            <div style="width:6px;height:18px;background:var(--sky);border-radius:1px"></div><div style="width:6px;height:18px;background:var(--sky);border-radius:1px"></div><div style="width:6px;height:18px;background:var(--sky);border-radius:1px"></div>
+            <span style="font-size:10px;color:var(--sky);padding:0 2px">+</span>
+            <div style="width:6px;height:18px;background:var(--sky);border-radius:1px"></div><div style="width:6px;height:18px;background:var(--sky);border-radius:1px"></div>
+            <span style="font-size:10px;color:var(--sky);padding:0 2px">+</span>
+            <div style="width:6px;height:18px;background:var(--sky);border-radius:1px"></div><div style="width:6px;height:18px;background:var(--sky);border-radius:1px"></div>
+          </div>
+        </div>
+        <div style="background:#E8F5E9;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:.75rem;color:var(--text-m);margin-bottom:5px">🌿 2¾+5½큰술</div>
+          <div style="display:flex;justify-content:center;gap:2px;align-items:flex-end">
+            <div style="width:8px;height:18px;background:var(--sage);border-radius:1px"></div><div style="width:8px;height:18px;background:var(--sage);border-radius:1px"></div>
+            <div style="width:8px;height:18px;background:#e0e0e0;border-radius:1px;position:relative;overflow:hidden"><div style="position:absolute;bottom:0;width:100%;height:75%;background:var(--sage)"></div></div>
+            <span style="font-size:10px;color:var(--sage);padding:0 1px">+</span>
+            <div style="width:8px;height:18px;background:var(--sage);border-radius:1px"></div><div style="width:8px;height:18px;background:var(--sage);border-radius:1px"></div><div style="width:8px;height:18px;background:var(--sage);border-radius:1px"></div><div style="width:8px;height:18px;background:var(--sage);border-radius:1px"></div><div style="width:8px;height:18px;background:var(--sage);border-radius:1px"></div>
+            <div style="width:8px;height:18px;background:#e0e0e0;border-radius:1px;position:relative;overflow:hidden"><div style="position:absolute;bottom:0;width:100%;height:50%;background:var(--sage)"></div></div>
+          </div>
+        </div>
+        <div style="background:#FFF8E1;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:.75rem;color:var(--text-m);margin-bottom:5px">🍋 6⅔+6⅔큰술</div>
+          <div style="display:flex;justify-content:center;gap:2px;align-items:flex-end">
+            <div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div>
+            <div style="width:7px;height:18px;background:#e0e0e0;border-radius:1px;position:relative;overflow:hidden"><div style="position:absolute;bottom:0;width:100%;height:67%;background:#F6D860"></div></div>
+            <span style="font-size:10px;color:#d4a017;padding:0 1px">+</span>
+            <div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div><div style="width:7px;height:18px;background:#F6D860;border-radius:1px"></div>
+            <div style="width:7px;height:18px;background:#e0e0e0;border-radius:1px;position:relative;overflow:hidden"><div style="position:absolute;bottom:0;width:100%;height:67%;background:#F6D860"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:10px">
+      <div style="background:var(--sky-l);border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:.8rem;color:var(--text-m);margin-bottom:6px">💧 탄산수 합계</div>
+        <div style="font-size:.85rem;margin-bottom:8px">3 + 2 + 2 =</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+          <input class="fi fi-whole" id="sum1" type="number" min="0" max="20" placeholder="?" style="width:60px;font-size:1.1rem">
+          <span style="font-size:.9rem;color:var(--text-m)">병</span>
+        </div>
+        <span id="sm1" style="font-size:1.2rem;display:block;margin-top:4px"></span>
+      </div>
+      <div style="background:#E8F5E9;border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:.8rem;color:var(--text-m);margin-bottom:6px">🌿 매실청 합계</div>
+        <div style="font-size:.82rem;margin-bottom:8px"><span class="MF">2<span class="F"><span class="Fn">3</span><span class="Fd">4</span></span></span> + <span class="MF">5<span class="F"><span class="Fn">1</span><span class="Fd">2</span></span></span> =</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:3px">
+          <input class="fi fi-whole" id="sum2w" type="number" min="0" max="20" placeholder="?" style="width:44px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <input class="fi" id="sum2n" type="number" min="0" max="9" placeholder="?" style="width:38px">
+            <div class="fi-bar" style="width:36px"></div>
+            <input class="fi" id="sum2d" type="number" min="1" max="9" placeholder="?" style="width:38px">
+          </div>
+          <span style="font-size:.82rem;color:var(--text-m);margin-left:2px">큰술</span>
+        </div>
+        <span id="sm2" style="font-size:1.2rem;display:block;margin-top:4px"></span>
+      </div>
+      <div style="background:#FFF8E1;border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:.8rem;color:var(--text-m);margin-bottom:6px">🍋 레몬청 합계</div>
+        <div style="font-size:.82rem;margin-bottom:8px"><span class="MF">6<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span> + <span class="MF">6<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span> =</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:3px">
+          <input class="fi fi-whole" id="sum3w" type="number" min="0" max="20" placeholder="?" style="width:44px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <input class="fi" id="sum3n" type="number" min="0" max="9" placeholder="?" style="width:38px">
+            <div class="fi-bar" style="width:36px"></div>
+            <input class="fi" id="sum3d" type="number" min="1" max="9" placeholder="?" style="width:38px">
+          </div>
+          <span style="font-size:.82rem;color:var(--text-m);margin-left:2px">큰술</span>
+        </div>
+        <span id="sm3" style="font-size:1.2rem;display:block;margin-top:4px"></span>
+      </div>
+    </div>
+    <button class="hint-toggle" onclick="checkSums()" style="margin-top:14px;background:var(--sage);color:#fff">합계 확인하기 ✅</button>
+  </div>
+
+  <div class="calc-card" id="remainSection" style="display:none">
+    <h3>🧮 남은 재료 = 처음 재료 − 사용한 합계</h3>
+    <div style="background:var(--cream);border-radius:10px;padding:10px 14px;margin:10px 0 12px;font-size:.88rem;line-height:2.2;color:var(--text-m);">
+      💧 탄산수: 10병 − <strong style="color:var(--sky)">7병</strong> = ?병<br>
+      🌿 매실청: 9큰술 − <strong style="color:var(--sage)"><span class="MF">8<span class="F"><span class="Fn">1</span><span class="Fd">4</span></span></span>큰술</strong> = ?큰술<br>
+      🍋 레몬청: 15큰술 − <strong style="color:#d4a017"><span class="MF">13<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span>큰술</strong> = ?큰술
+    </div>
+    <button class="hint-toggle" onclick="toggleRemainHint()" id="remainHintBtn" style="margin-bottom:10px">🖼️ 그림 힌트 보기</button>
+    <div id="remainHintBox" style="display:none;margin-bottom:12px">
+      <div style="background:var(--sage-l);border-radius:10px;padding:10px 12px;font-size:.82rem;color:var(--text-m);margin-bottom:8px">🖼️ 그림으로 알아봐요! 처음 재료에서 사용한 양을 빼요. (색깔 막대 = 남은 양)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="background:var(--sky-l);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:.75rem;color:var(--text-m);margin-bottom:2px;font-weight:700">💧 10−7병</div>
+          <div style="display:flex;gap:3px;align-items:flex-end;justify-content:center;margin:6px 0"><div style="width:9px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:9px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:9px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:9px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:9px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:9px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:9px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:9px;height:32px;background:var(--sky);border-radius:2px;flex-shrink:0"></div><div style="width:9px;height:32px;background:var(--sky);border-radius:2px;flex-shrink:0"></div><div style="width:9px;height:32px;background:var(--sky);border-radius:2px;flex-shrink:0"></div></div><div style="font-size:.7rem;margin-top:4px;display:flex;gap:4px;justify-content:center;align-items:center"><div style="width:8px;height:8px;background:#ccc;border-radius:1px;flex-shrink:0"></div><span style="color:var(--text-m)">7병 사용</span><div style="width:8px;height:8px;background:var(--sky);border-radius:1px;flex-shrink:0;margin-left:6px"></div><span style="color:var(--sky);font-weight:700">3병 남음</span></div>
+        </div>
+        <div style="background:#E8F5E9;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:.75rem;color:var(--text-m);margin-bottom:2px;font-weight:700">🌿 9−8¼큰술</div>
+          <div style="display:flex;gap:3px;align-items:flex-end;justify-content:center;margin:6px 0"><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:10px;height:32px;border-radius:2px;overflow:hidden;flex-shrink:0;display:flex;flex-direction:column;"><div style="height:8px;background:#ccc;position:relative;"><div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="flex:1;background:var(--sage);"></div></div></div><div style="font-size:.7rem;margin-top:4px;display:flex;gap:4px;justify-content:center;align-items:center"><div style="width:8px;height:8px;background:#ccc;border-radius:1px;flex-shrink:0"></div><span style="color:var(--text-m)">8¼큰술 사용</span><div style="width:8px;height:8px;background:var(--sage);border-radius:1px;flex-shrink:0;margin-left:6px"></div><span style="color:var(--sage);font-weight:700">¾큰술 남음</span></div>
+        </div>
+        <div style="background:#FFF8E1;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:.75rem;color:var(--text-m);margin-bottom:2px;font-weight:700">🍋 15−13⅓큰술</div>
+          <div style="display:flex;gap:2px;align-items:flex-end;justify-content:center;margin:6px 0;flex-wrap:nowrap"><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;background:#ccc;border-radius:2px;position:relative;flex-shrink:0"><div style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="width:7px;height:32px;border-radius:2px;overflow:hidden;flex-shrink:0;display:flex;flex-direction:column;"><div style="height:11px;background:#ccc;position:relative;"><div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(210,50,50,.35),rgba(210,50,50,.35) 2px,transparent 2px,transparent 5px)"></div></div><div style="flex:1;background:#F6B800;"></div></div><div style="width:7px;height:32px;background:#F6B800;border-radius:2px;flex-shrink:0"></div></div><div style="font-size:.7rem;margin-top:4px;display:flex;gap:4px;justify-content:center;align-items:center"><div style="width:8px;height:8px;background:#ccc;border-radius:1px;flex-shrink:0"></div><span style="color:var(--text-m)">13⅓큰술 사용</span><div style="width:8px;height:8px;background:#F6B800;border-radius:1px;flex-shrink:0;margin-left:6px"></div><span style="color:#b8860b;font-weight:700">1⅔큰술 남음</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="answer-grid">
+      <!-- 탄산수 -->
+      <div class="ans-box" id="ab1">
+        <div class="ans-label">💧 탄산수</div>
+        <input class="fi fi-whole" id="a1" type="number" min="0" max="10" placeholder="?"> 병
+        <div class="ans-mark" id="am1"></div>
+      </div>
+      <!-- 매실청 -->
+      <div class="ans-box" id="ab2">
+        <div class="ans-label">🌿 매실청</div>
+        <div class="frac-input" style="justify-content:center">
+          <div class="frac-input-stack">
+            <input class="fi" id="a2n" type="number" min="0" max="9" placeholder="?">
+            <div class="fi-bar"></div>
+            <input class="fi" id="a2d" type="number" min="1" max="9" placeholder="?">
+          </div>
+        </div>
+        큰술
+        <div class="ans-mark" id="am2"></div>
+      </div>
+      <!-- 레몬청 -->
+      <div class="ans-box" id="ab3">
+        <div class="ans-label">🍋 레몬청</div>
+        <div class="frac-input" style="justify-content:center">
+          <input class="fi fi-whole" id="a3w" type="number" min="0" max="10" placeholder="?">
+          <div class="frac-input-stack">
+            <input class="fi" id="a3n" type="number" min="0" max="9" placeholder="?">
+            <div class="fi-bar"></div>
+            <input class="fi" id="a3d" type="number" min="1" max="9" placeholder="?">
+          </div>
+        </div>
+        큰술
+        <div class="ans-mark" id="am3"></div>
+      </div>
+    </div>
+
+    <button class="hint-toggle" onclick="toggleHint('h5')">💡 힌트 보기</button>
+    <div class="hint-content" id="h5">
+      위에서 합계를 먼저 구한 뒤 빼요!<br>
+      💧 탄산수: 10 − (합계) = ?<br>
+      🌿 매실청: 9 − (합계) = ?<br>
+      🍋 레몬청: 15 − (합계) = ?
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-prev" onclick="go(4)">◀ 이전</button>
+    <button class="btn-check" onclick="checkP5()">정답 확인하기 🎉</button>
+  </div>
+</div>
+
+<!-- ══ PAGE 6: 심화 ══ -->
+<div class="page" id="p6">
+  <div class="chapter-tag">⭐ 심화</div>
+  <h2 class="chapter-title">더 필요한 재료를 구해요!</h2>
+  <div class="info-box" style="margin-bottom:16px">
+    남은 재료로 <strong>주문서 ④</strong> (레몬에이드 1잔)를 만들려고 해요.<br>
+    레몬청이 부족하다면 얼마나 더 필요할까요?
+  </div>
+
+  <div class="calc-card">
+    <h3>📊 주문서 ④ 상황 정리</h3>
+    <table style="width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed;">
+      <thead>
+        <tr>
+          <th style="background:var(--coral);color:#fff;padding:10px 8px;text-align:center;font-size:.85rem;border-radius:10px 0 0 0;width:30%">주문서</th>
+          <th style="background:var(--coral);color:#fff;padding:10px 8px;text-align:center;font-size:.85rem;width:35%">필요한 레몬청</th>
+          <th style="background:var(--coral);color:#fff;padding:10px 8px;text-align:center;font-size:.85rem;border-radius:0 10px 0 0;width:35%">남은 레몬청</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#fff;">
+          <td style="padding:14px 10px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:900;color:var(--coral);font-size:1rem;margin-bottom:6px">주문서 ④</div>
+            <div style="font-size:1.5rem;line-height:1.6">🍋</div>
+            <div style="font-size:.78rem;color:var(--text-m)">레몬에이드 1잔</div>
+          </td>
+          <td style="padding:14px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:700;font-size:1.1rem;margin-bottom:8px">
+              <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span>큰술
+            </div>
+            <!-- 레몬청 3⅓ 막대 -->
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:3px">
+              <div style="width:12px;height:24px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:12px;height:24px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:12px;height:24px;background:#F6D860;border-radius:2px"></div>
+              <div style="width:12px;height:24px;background:#e0e0e0;border-radius:2px;position:relative;overflow:hidden">
+                <div style="position:absolute;bottom:0;width:100%;height:33%;background:#F6D860"></div>
+              </div>
+            </div>
+          </td>
+          <td style="padding:14px 8px;text-align:center;vertical-align:middle;">
+            <div style="font-weight:700;font-size:1.1rem;margin-bottom:8px">
+              <span class="MF">1<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span>큰술
+            </div>
+            <!-- 남은 레몬청 1⅔ 막대 -->
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:3px">
+              <div style="width:12px;height:24px;background:#a5d6a7;border-radius:2px"></div>
+              <div style="width:12px;height:24px;background:#e0e0e0;border-radius:2px;position:relative;overflow:hidden">
+                <div style="position:absolute;bottom:0;width:100%;height:67%;background:#a5d6a7"></div>
+              </div>
+              <div style="width:12px;height:24px;background:#e0e0e0;border-radius:2px"></div>
+              <div style="width:12px;height:24px;background:#e0e0e0;border-radius:2px"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="background:var(--cream);border-radius:10px;padding:12px 16px;margin:14px 0;font-size:.9rem;line-height:2.0;color:var(--text-m);">
+      🤔 필요량 − 남은 양 = 더 필요한 레몬청<br>
+      <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span>큰술 − <span class="MF">1<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span>큰술 = ?
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:1.05rem;flex-wrap:wrap;margin:16px 0">
+      <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span>
+      <span style="font-size:1.2rem;font-weight:900;color:var(--coral)">−</span>
+      <span class="MF">1<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span>
+      <span style="font-size:1.2rem;font-weight:900">=</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input class="fi fi-whole" id="b1w" type="number" min="0" max="10" placeholder="?" style="width:44px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <input class="fi" id="b1n" type="number" min="0" max="9" placeholder="?" style="width:38px">
+          <div class="fi-bar" style="width:36px"></div>
+          <input class="fi" id="b1d" type="number" min="1" max="9" placeholder="?" style="width:38px">
+        </div>
+        <span style="font-size:.9rem;color:var(--text-m)">큰술</span>
+        <span id="bm1" style="font-size:1.4rem;margin-left:4px"></span>
+      </div>
+    </div>
+
+    <button class="hint-toggle" onclick="toggleHint('h6')">💡 힌트 보기</button>
+    <div class="hint-content" id="h6">
+      분모가 같으니 자연수 부분끼리, 분수 부분끼리 빼요!<br>
+      분수 부분: <span class="F"><span class="Fn">1</span><span class="Fd">3</span></span> − <span class="F"><span class="Fn">2</span><span class="Fd">3</span></span>는 뺄 수 없으니 자연수에서 1을 빌려와요.<br>
+      <span class="MF">3<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span> = <span class="MF">2<span class="F"><span class="Fn">4</span><span class="Fd">3</span></span></span> 로 바꿔서 계산해요!
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-prev" onclick="go(5)">◀ 이전</button>
+    <button class="btn-check" onclick="checkP6()">확인하기 ✅</button>
+  </div>
+</div>
+
+<!-- ══ PAGE 7: 엔딩 ══ -->
+<div class="page" id="p7">
+  <div class="ending">
+    <div class="big-emoji">🎊</div>
+    <h2>세아의 찻집 대성공!</h2>
+    <p style="color:var(--text-m);margin-bottom:24px">모든 주문을 완료하고 남은 재료도 정확히 계산했어요!</p>
+
+    <table class="summary-table">
+      <tr><th>재료</th><th>처음 보유</th><th>사용량</th><th>남은 양</th></tr>
+      <tr>
+        <td>💧 탄산수</td><td>10병</td><td>7병</td><td><strong>3병</strong></td>
+      </tr>
+      <tr>
+        <td>🌿 매실청</td>
+        <td>9큰술</td>
+        <td><span class="MF">8<span class="F"><span class="Fn">1</span><span class="Fd">4</span></span></span>큰술</td>
+        <td><strong><span class="F"><span class="Fn">3</span><span class="Fd">4</span></span>큰술</strong></td>
+      </tr>
+      <tr>
+        <td>🍋 레몬청</td>
+        <td>15큰술</td>
+        <td><span class="MF">13<span class="F"><span class="Fn">1</span><span class="Fd">3</span></span></span>큰술</td>
+        <td><strong><span class="MF">1<span class="F"><span class="Fn">2</span><span class="Fd">3</span></span></span>큰술</strong></td>
+      </tr>
+    </table>
+
+    <div class="info-box" style="text-align:left">
+      ✏️ <strong>오늘 배운 분수 계산:</strong><br>
+      • 분모가 같은 분수의 덧셈 → 분자끼리 더하기<br>
+      • 분모가 같은 분수의 뺄셈 → 분자끼리 빼기<br>
+      • 자연수에서 분수를 뺄 때 → 자연수에서 1을 빌려와요!
+    </div>
+
+    <button class="btn-restart" onclick="restart()">🔄 처음부터 다시하기</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let cur = 0;
+const total = 8;
+let maxVisited = 0; // 방문 가능한 최대 페이지
+
+// ── DOTS ──
+const dotsEl = document.getElementById('dots');
+for(let i=0;i<total;i++){
+  const d = document.createElement('span');
+  d.className='page-dot'+(i===0?' active':'');
+  d.setAttribute('data-page', i);
+  d.onclick=()=>tryGo(i);
+  dotsEl.appendChild(d);
+}
+
+// ── DOT STYLE UPDATE ──
+function updateDots(){
+  for(let i=0;i<total;i++){
+    const d = dotsEl.children[i];
+    d.classList.remove('active');
+    if(i === cur) d.classList.add('active');
+    // 아직 방문 불가 페이지는 흐리게 + 커서 기본
+    if(i > maxVisited){
+      d.style.opacity = '0.35';
+      d.style.cursor = 'default';
+      d.title = '아직 여기까지 오지 않았어요!';
+    } else {
+      d.style.opacity = '1';
+      d.style.cursor = 'pointer';
+      d.title = '';
+    }
+  }
+}
+
+// ── NAVIGATION (잠금 포함) ──
+function tryGo(n){
+  if(n > maxVisited){
+    popup('앞 페이지를 먼저 풀고 와야 해요! 🔒','error');
+    return;
+  }
+  go(n);
+}
+
+function go(n){
+  document.getElementById('p'+cur).classList.remove('active');
+  cur = n;
+  if(cur > maxVisited) maxVisited = cur;
+  document.getElementById('p'+cur).classList.add('active');
+  document.getElementById('prog').style.width=((cur/(total-1))*100)+'%';
+  window.scrollTo(0,0);
+  updateDots();
+}
+
+// ── HINT TOGGLES ──
+function toggleHint(id){
+  const el=document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function toggleTableHint(){
+  const box = document.getElementById('tableHintBox');
+  const btn = document.getElementById('tableHintBtn');
+  const isHidden = box.style.display === 'none';
+  box.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '🖼️ 그림 힌트 숨기기' : '🖼️ 그림 힌트 보기';
+  // 막대 그림 보여주기/숨기기
+  document.querySelectorAll('.tbl-vis').forEach(el=>{
+    el.style.display = isHidden ? 'flex' : 'none';
+  });
+}
+
+function toggleSumHint(){
+  const box = document.getElementById('sumHintBox');
+  const btn = document.getElementById('sumHintBtn');
+  const isHidden = box.style.display === 'none';
+  box.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '🖼️ 그림 힌트 숨기기' : '🖼️ 그림 힌트 보기';
+}
+
+function toggleRemainHint(){
+  const box = document.getElementById('remainHintBox');
+  const btn = document.getElementById('remainHintBtn');
+  const isHidden = box.style.display === 'none';
+  box.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '🖼️ 그림 힌트 숨기기' : '🖼️ 그림 힌트 보기';
+}
+
+// ── FRACTION VALUE ──
+function fv(w,n,d){ return (parseFloat(w)||0)+(parseFloat(n)||0)/(parseFloat(d)||1); }
+function near(a,b){ return Math.abs(a-b)<0.06; }
+
+// ── POPUP ──
+let pt;
+function popup(msg,type='success'){
+  const el=document.getElementById('popup');
+  el.textContent=msg; el.className='popup '+type+' show';
+  clearTimeout(pt);
+  pt=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ── MARK FIELD ──
+function mark(el, ok){ el.classList.toggle('correct',ok); el.classList.toggle('wrong',!ok); }
+
+// ── PAGE 4 CHECK ──
+function checkP4(){
+  const v1=fv(document.getElementById('r1w').value,document.getElementById('r1n').value,document.getElementById('r1d').value);
+  const ok1=near(v1,20/3);
+  ['r1w','r1n','r1d'].forEach(id=>{mark(document.getElementById(id),ok1)});
+  document.getElementById('m1').textContent=ok1?'✅':'❌';
+
+  const v2=fv(document.getElementById('r2w').value,document.getElementById('r2n').value,document.getElementById('r2d').value);
+  const ok2=near(v2,5.5);
+  ['r2w','r2n','r2d'].forEach(id=>{mark(document.getElementById(id),ok2)});
+  document.getElementById('m2').textContent=ok2?'✅':'❌';
+
+  const v3=fv(document.getElementById('r3w').value,document.getElementById('r3n').value,document.getElementById('r3d').value);
+  const ok3=near(v3,20/3);
+  ['r3w','r3n','r3d'].forEach(id=>{mark(document.getElementById(id),ok3)});
+  document.getElementById('m3').textContent=ok3?'✅':'❌';
+
+  if(ok1&&ok2&&ok3){
+    popup('🎉 완벽해요! 다음 단계로 가요!','success');
+    setTimeout(()=>go(5),1600);
+  } else {
+    popup('💭 틀린 칸을 다시 확인해보세요!','error');
+  }
+}
+
+// ── PAGE 5 SUM CHECK ──
+let sumsConfirmed=false;
+function checkSums(){
+  const s1=parseFloat(document.getElementById('sum1').value)||0;
+  const ok1=Math.abs(s1-7)<0.1;
+  mark(document.getElementById('sum1'),ok1);
+  document.getElementById('sm1').textContent=ok1?'✅':'❌';
+
+  const s2=fv(document.getElementById('sum2w').value,document.getElementById('sum2n').value,document.getElementById('sum2d').value);
+  const ok2=Math.abs(s2-8.25)<0.1;
+  ['sum2w','sum2n','sum2d'].forEach(id=>{mark(document.getElementById(id),ok2)});
+  document.getElementById('sm2').textContent=ok2?'✅':'❌';
+
+  const s3=fv(document.getElementById('sum3w').value,document.getElementById('sum3n').value,document.getElementById('sum3d').value);
+  const ok3=Math.abs(s3-40/3)<0.1;
+  ['sum3w','sum3n','sum3d'].forEach(id=>{mark(document.getElementById(id),ok3)});
+  document.getElementById('sm3').textContent=ok3?'✅':'❌';
+
+  if(ok1&&ok2&&ok3){
+    sumsConfirmed=true;
+    popup('🎉 합계 계산 완료! 이제 남은 재료를 구해요!','success');
+    document.getElementById('remainSection').style.display='block';
+  } else {
+    popup('💭 합계를 다시 계산해보세요!','error');
+  }
+}
+
+function checkP5(){
+  const v1=parseFloat(document.getElementById('a1').value)||0;
+  const ok1=near(v1,3);
+  mark(document.getElementById('a1'),ok1);
+  document.getElementById('ab1').classList.toggle('correct',ok1);
+  document.getElementById('ab1').classList.toggle('wrong',!ok1);
+  document.getElementById('am1').textContent=ok1?'✅':'❌';
+
+  const v2=fv(0,document.getElementById('a2n').value,document.getElementById('a2d').value);
+  const ok2=near(v2,0.75);
+  ['a2n','a2d'].forEach(id=>{mark(document.getElementById(id),ok2)});
+  document.getElementById('ab2').classList.toggle('correct',ok2);
+  document.getElementById('ab2').classList.toggle('wrong',!ok2);
+  document.getElementById('am2').textContent=ok2?'✅':'❌';
+
+  const v3=fv(document.getElementById('a3w').value,document.getElementById('a3n').value,document.getElementById('a3d').value);
+  const ok3=near(v3,5/3);
+  ['a3w','a3n','a3d'].forEach(id=>{mark(document.getElementById(id),ok3)});
+  document.getElementById('ab3').classList.toggle('correct',ok3);
+  document.getElementById('ab3').classList.toggle('wrong',!ok3);
+  document.getElementById('am3').textContent=ok3?'✅':'❌';
+
+  if(ok1&&ok2&&ok3){
+    confetti();
+    popup('🎊 정답! 모든 재료를 정확히 계산했어요!','success');
+    setTimeout(()=>go(6),1800);
+  } else {
+    popup('💭 다시 계산해보세요!','error');
+  }
+}
+
+// ── PAGE 6 CHECK ──
+function checkP6(){
+  const v=fv(document.getElementById('b1w').value,document.getElementById('b1n').value,document.getElementById('b1d').value);
+  const ok=near(v,5/3);
+  ['b1w','b1n','b1d'].forEach(id=>{mark(document.getElementById(id),ok)});
+  document.getElementById('bm1').textContent=ok?'✅':'❌';
+  if(ok){
+    confetti();
+    popup('🎉 훌륭해요! 심화 문제까지 완벽!','success');
+    setTimeout(()=>go(7),1800);
+  } else {
+    popup('💭 힌트를 참고해보세요!','error');
+  }
+}
+
+// ── CONFETTI ──
+function confetti(){
+  const emojis=['🎉','⭐','🌟','✨','🎊','🎈'];
+  for(let i=0;i<25;i++){
+    const el=document.createElement('div');
+    el.className='cf';
+    el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left=Math.random()*100+'vw';
+    el.style.animationDelay=Math.random()*1.5+'s';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),3500);
+  }
+}
+
+// ── RESTART ──
+function restart(){
+  document.querySelectorAll('.fi').forEach(el=>{el.value='';el.classList.remove('correct','wrong');});
+  ['m1','m2','m3','am1','am2','am3','bm1'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='';
+  });
+  sumsConfirmed=false;
+  maxVisited=0;
+  const rs=document.getElementById('remainSection');
+  if(rs) rs.style.display='none';
+  // 힌트 박스들 초기화
+  ['tableHintBox','sumHintBox','remainHintBox'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  ['tableHintBtn','sumHintBtn','remainHintBtn'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='🖼️ 그림 힌트 보기';
+  });
+  document.querySelectorAll('.tbl-vis').forEach(el=>{ el.style.display='none'; });
+  go(0);
+}
+
+// 초기 dot 상태 세팅
+updateDots();
+</script>
+</body>
+</html>
